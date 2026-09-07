@@ -10,9 +10,11 @@ import { InventoryView } from './components/InventoryView';
 import { PurchasingView } from './components/PurchasingView';
 import { AccountingView } from './components/AccountingView';
 import { AnalyticsView } from './components/AnalyticsView';
+import { RestaurantSetupView } from './components/RestaurantSetupView';
 import { ThermalReceiptModal } from './components/ThermalReceiptModal';
 import { ShiftDrawerModal } from './components/ShiftDrawerModal';
 import { NewTenantModal } from './components/NewTenantModal';
+import { StaffSwitchModal } from './components/StaffSwitchModal';
 import {
   Tenant,
   Branch,
@@ -25,6 +27,7 @@ import {
   PurchaseOrder,
   JournalEntry,
   Shift,
+  StaffUser,
 } from './types/restaurant';
 
 const INITIAL_TENANT: Tenant = {
@@ -56,6 +59,7 @@ export default function App() {
   const [activeBranch, setActiveBranch] = useState<Branch>(INITIAL_BRANCH);
 
   const [activeModule, setActiveModule] = useState<ActiveModule>('POS');
+  const [currentUser, setCurrentUser] = useState<StaffUser | null>(null);
 
   // Domain state
   const [categories, setCategories] = useState<Category[]>([]);
@@ -85,6 +89,7 @@ export default function App() {
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
   const [isNewTenantModalOpen, setIsNewTenantModalOpen] = useState(false);
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // 1. Fetch Tenants on mount
@@ -267,6 +272,8 @@ export default function App() {
         onOpenShiftModal={() => setIsShiftModalOpen(true)}
         activeShift={activeShift}
         kdsCount={kdsCount}
+        currentUser={currentUser}
+        onOpenStaffModal={() => setIsStaffModalOpen(true)}
       />
 
       {/* Main View Area based on Active Module */}
@@ -280,6 +287,7 @@ export default function App() {
             tables={tables}
             onOrderCreated={handleOrderCreated}
             onShowReceipt={(order) => setReceiptOrder(order)}
+            currentUser={currentUser}
           />
         )}
 
@@ -297,6 +305,7 @@ export default function App() {
               setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
               reloadRestaurantData();
             }}
+            currentUser={currentUser}
           />
         )}
 
@@ -305,6 +314,24 @@ export default function App() {
             tenant={activeTenant}
             orders={orders}
             onBumpStatus={handleBumpStatus}
+            currentUser={currentUser}
+          />
+        )}
+
+        {activeModule === 'SETUP' && (
+          <RestaurantSetupView
+            tenant={activeTenant}
+            branches={branches}
+            products={products}
+            currentUser={currentUser}
+            onTenantUpdated={(updated) => {
+              setActiveTenant(updated);
+              setTenants((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+            }}
+            onRefreshAll={reloadRestaurantData}
+            onSelectUser={(user) => {
+              setCurrentUser(user);
+            }}
           />
         )}
 
@@ -336,7 +363,9 @@ export default function App() {
             tenant={activeTenant}
             categories={categories}
             products={products}
+            ingredients={ingredients}
             onToggle86={handleToggle86}
+            onRefresh={reloadRestaurantData}
           />
         )}
 
@@ -366,6 +395,9 @@ export default function App() {
             branch={activeBranch}
             journals={journals}
             summary={accountingSummary}
+            orders={orders}
+            onRefresh={reloadRestaurantData}
+            onViewReceipt={(order) => setReceiptOrder(order)}
           />
         )}
 
@@ -405,6 +437,18 @@ export default function App() {
           onTenantCreated={(newTenant) => {
             setTenants((prev) => [...prev, newTenant]);
             setActiveTenant(newTenant);
+          }}
+        />
+      )}
+
+      {isStaffModalOpen && (
+        <StaffSwitchModal
+          staffList={activeTenant.staffUsers || []}
+          currentUser={currentUser}
+          onClose={() => setIsStaffModalOpen(false)}
+          onSelectUser={(user) => {
+            setCurrentUser(user);
+            setIsStaffModalOpen(false);
           }}
         />
       )}

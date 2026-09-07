@@ -7,16 +7,46 @@ export type UserRole =
   | 'KITCHEN'
   | 'ACCOUNTANT';
 
-export type KitchenStation = 'GRILL' | 'FRYER' | 'COLD' | 'DRINKS' | 'OVEN';
+export type KitchenStation = 'GRILL' | 'FRYER' | 'COLD' | 'DRINKS' | 'OVEN' | string;
+
+export interface StationConfig {
+  id: string;
+  name: string;
+  code: string; // e.g. 'GRILL', 'FRYER', 'COLD', 'DRINKS', 'OVEN', 'PIZZA', 'BAKERY'
+  color?: string; // hex or tailwind color class
+  description?: string;
+  displayOrder?: number;
+}
+
+export interface StaffUser {
+  id: string;
+  tenantId: string;
+  branchId?: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  role: UserRole;
+  pinCode: string; // 4-digit PIN e.g. '1234'
+  assignedStation?: string; // for kitchen staff
+  isActive: boolean;
+  createdAt: string;
+}
 
 export interface Tenant {
   id: string;
   name: string;
+  legalName?: string;
   slug: string;
   country: string;
   currency: string;
+  currencySymbol?: string;
   taxRatePct: number;
   taxName: string;
+  serviceChargePct?: number;
+  voidPassword?: string; // Password or PIN required to void orders / items
+  stations?: StationConfig[];
+  phone?: string;
+  address?: string;
   createdAt: string;
 }
 
@@ -159,6 +189,8 @@ export interface Order {
   voidReason?: string;
   waiterName?: string;
   cashierName?: string;
+  createdByUserId?: string;
+  createdByUserRole?: UserRole;
   createdAt: string;
   paidAt?: string;
 }
@@ -230,4 +262,26 @@ export interface Shift {
   status: 'OPEN' | 'CLOSED';
   totalSales: number;
   orderCount: number;
+}
+
+export interface AccountingSummary {
+  grossSales: number;
+  discounts: number;
+  netSales: number;
+  taxCollected: number;
+  totalTax: number;
+  totalCollected: number;
+  cogs: number;
+  grossProfit: number;
+  foodCostPct: number;
+  orderCount: number;
+  openOrdersCount: number;
+  openOrdersSubtotal: number;
+  openOrdersTax: number;
+  openOrdersTotal: number;
+  allOrdersAmount: number;
+  totalOrdersCount: number;
+  paymentBreakdown?: Record<string, number>;
+  operatingExpenses: number;
+  netProfit: number;
 }

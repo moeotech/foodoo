@@ -26,14 +26,16 @@ import {
   Category,
   Order,
   OrderItem,
+  StaffUser,
 } from '../types/restaurant';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface VoidModalTarget {
   source: 'CART' | 'TABLE_ORDER';
-  item: OrderItem;
+  item?: OrderItem; // Made optional so we can support CLEAR_CART
   index?: number;
   orderId?: string;
+  type?: 'ITEM' | 'CLEAR_CART';
 }
 
 interface VoidAuditRecord {
@@ -57,6 +59,7 @@ interface WaiterAppProps {
   onOrderCreated: (order: Order) => void;
   onTableStatusChange: (tableId: string, status: any) => void;
   onOrderUpdated?: (order: Order) => void;
+  currentUser?: StaffUser | null;
 }
 
 export const WaiterApp: React.FC<WaiterAppProps> = ({
@@ -69,6 +72,7 @@ export const WaiterApp: React.FC<WaiterAppProps> = ({
   onOrderCreated,
   onTableStatusChange,
   onOrderUpdated,
+  currentUser,
 }) => {
   const { t, tCatalog, formatCurrency, isRTL } = useLanguage();
   const [selectedTable, setSelectedTable] = useState<RestaurantTable | null>(tables[0] || null);
@@ -90,6 +94,8 @@ export const WaiterApp: React.FC<WaiterAppProps> = ({
   // Void item state
   const [voidTarget, setVoidTarget] = useState<VoidModalTarget | null>(null);
   const [voidReason, setVoidReason] = useState<string>(commonVoidReasons[0]);
+  const [voidPinCode, setVoidPinCode] = useState<string>('');
+  const [voidError, setVoidError] = useState<string>('');
   const [voidAuditLogs, setVoidAuditLogs] = useState<VoidAuditRecord[]>([]);
   const [showVoidHistory, setShowVoidHistory] = useState<boolean>(false);
   const [voidNotification, setVoidNotification] = useState<string | null>(null);
@@ -127,13 +133,30 @@ export const WaiterApp: React.FC<WaiterAppProps> = ({
   ) => {
     setVoidTarget({ source, item, index, orderId });
     setVoidReason(commonVoidReasons[0]);
+    setVoidPinCode('');
+    setVoidError('');
   };
 
   const handleConfirmVoid = async () => {
-    if (!voidTarget || !voidReason.trim()) return;
+    if (!voidTarget || !voidReason.trim() || !voidPinCode.trim()) return;
     setIsSubmittingVoid(true);
+    setVoidError('');
 
     try {
+      // 1. Verify Void Password First
+      const verifyRes = await fetch('/api/verify-void-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: tenant.id, pinCode: voidPinCode }),
+      });
+
+      if (!verifyRes.ok) {
+        setVoidError('Invalid Void Password or PIN');
+        setIsSubmittingVoid(false);
+        return;
+      }
+
+      // 2. Proceed with void
       const { source, item, index, orderId } = voidTarget;
       const finalReason = voidReason.trim();
 
@@ -237,7 +260,9 @@ export const WaiterApp: React.FC<WaiterAppProps> = ({
         discountAmount: 0,
         taxAmount,
         total,
-        waiterName: 'Server Tariq',
+        waiterName: currentUser?.name || 'Server',
+        createdByUserId: currentUser?.id,
+        createdByUserRole: currentUser?.role || 'WAITER',
       };
 
       const res = await fetch('/api/orders', {
@@ -771,6 +796,24 @@ export const WaiterApp: React.FC<WaiterAppProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition"
                   />
                 </div>
+
+                {/* Void Pin Code */}
+                <div className="pt-2">
+                  <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                    Manager Void Password / PIN <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={voidPinCode}
+                    onChange={(e) => {
+                      setVoidPinCode(e.target.value);
+                      setVoidError('');
+                    }}
+                    placeholder="Enter PIN"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition"
+                  />
+                  {voidError && <p className="text-rose-400 text-[10px] mt-1 font-semibold">{voidError}</p>}
+                </div>
               </div>
             </div>
 
@@ -787,7 +830,7 @@ export const WaiterApp: React.FC<WaiterAppProps> = ({
               <button
                 id="confirm-void-item-btn"
                 type="button"
-                disabled={!voidReason.trim() || isSubmittingVoid}
+                disabled={!voidReason.trim() || !voidPinCode.trim() || isSubmittingVoid}
                 onClick={handleConfirmVoid}
                 className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg shadow-rose-900/20"
               >

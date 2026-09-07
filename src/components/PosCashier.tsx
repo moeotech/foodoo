@@ -27,8 +27,10 @@ import {
   OrderItem,
   SelectedModifier,
   PaymentMethod,
+  StaffUser,
 } from '../types/restaurant';
 import { useLanguage } from '../i18n/LanguageContext';
+import { VoidPasswordModal } from './VoidPasswordModal';
 
 interface PosCashierProps {
   tenant: Tenant;
@@ -38,6 +40,7 @@ interface PosCashierProps {
   tables: RestaurantTable[];
   onOrderCreated: (order: Order) => void;
   onShowReceipt: (order: Order) => void;
+  currentUser?: StaffUser | null;
 }
 
 export const PosCashier: React.FC<PosCashierProps> = ({
@@ -48,6 +51,7 @@ export const PosCashier: React.FC<PosCashierProps> = ({
   tables,
   onOrderCreated,
   onShowReceipt,
+  currentUser,
 }) => {
   const { t, tCatalog, formatCurrency, isRTL } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -58,6 +62,13 @@ export const PosCashier: React.FC<PosCashierProps> = ({
   const [cartItems, setCartItems] = useState<OrderItem[]>([]);
   const [orderNotes, setOrderNotes] = useState<string>('');
   const [discountPct, setDiscountPct] = useState<number>(0);
+
+  // Void authorization modal state
+  const [voidModalTarget, setVoidModalTarget] = useState<{
+    type: 'ITEM' | 'CLEAR_CART';
+    item?: OrderItem;
+    index?: number;
+  } | null>(null);
 
   // Modifiers selection modal state
   const [modifyingProduct, setModifyingProduct] = useState<Product | null>(null);
@@ -128,11 +139,13 @@ export const PosCashier: React.FC<PosCashierProps> = ({
   };
 
   const updateQuantity = (index: number, delta: number) => {
+    const item = cartItems[index];
+    if (delta < 0 && item.quantity <= 1) {
+      handleRequestVoidItem(item, index);
+      return;
+    }
     const updated = [...cartItems];
     updated[index].quantity += delta;
-    if (updated[index].quantity <= 0) {
-      updated.splice(index, 1);
-    }
     setCartItems(updated);
   };
 
@@ -169,6 +182,9 @@ export const PosCashier: React.FC<PosCashierProps> = ({
         taxAmount,
         total: grandTotal,
         notes: orderNotes,
+        cashierName: currentUser?.name || 'Cashier',
+        createdByUserId: currentUser?.id,
+        createdByUserRole: currentUser?.role || 'CASHIER',
       };
 
       const res = await fetch('/api/orders', {
@@ -214,6 +230,9 @@ export const PosCashier: React.FC<PosCashierProps> = ({
         taxAmount,
         total: grandTotal,
         notes: orderNotes,
+        cashierName: currentUser?.name || 'Cashier',
+        createdByUserId: currentUser?.id,
+        createdByUserRole: currentUser?.role || 'CASHIER',
       };
 
       const createRes = await fetch('/api/orders', {
@@ -257,6 +276,25 @@ export const PosCashier: React.FC<PosCashierProps> = ({
   };
 
   const cashChange = Number(cashTendered) > grandTotal ? Number(cashTendered) - grandTotal : 0;
+
+  // Void Protection Handlers (Requires Void Password)
+  const handleRequestVoidItem = (item: OrderItem, index: number) => {
+    setVoidModalTarget({ type: 'ITEM', item, index });
+  };
+
+  const handleRequestClearCart = () => {
+    setVoidModalTarget({ type: 'CLEAR_CART' });
+  };
+
+  const handleConfirmVoid = () => {
+    if (!voidModalTarget) return;
+    if (voidModalTarget.type === 'CLEAR_CART') {
+      setCartItems([]);
+    } else if (voidModalTarget.type === 'ITEM' && voidModalTarget.index !== undefined) {
+      setCartItems((prev) => prev.filter((_, i) => i !== voidModalTarget.index));
+    }
+    setVoidModalTarget(null);
+  };
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row h-[calc(100vh-6rem)] overflow-hidden bg-slate-950 text-slate-100">
@@ -411,7 +449,7 @@ export const PosCashier: React.FC<PosCashierProps> = ({
           </div>
           {cartItems.length > 0 && (
             <button
-              onClick={() => setCartItems([])}
+              onClick={handleRequestClearCart}
               className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-800 transition"
               title={t('pos.clearOrder')}
             >
@@ -777,6 +815,20 @@ export const PosCashier: React.FC<PosCashierProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Void Authentication Modal */}
+      {voidModalTarget && (
+        <VoidPasswordModal
+          tenantId={tenant.id}
+          actionDescription={
+            voidModalTarget.type === 'CLEAR_CART'
+              ? 'Clear entire order cart'
+              : `Remove ${tCatalog(voidModalTarget.item?.productName || '')}`
+          }
+          onSuccess={handleConfirmVoid}
+          onCancel={() => setVoidModalTarget(null)}
+        />
       )}
     </div>
   );

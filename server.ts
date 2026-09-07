@@ -33,6 +33,138 @@ app.post('/api/tenants', (req, res) => {
   res.status(201).json(newTenant);
 });
 
+app.get('/api/tenants/:id', (req, res) => {
+  const { id } = req.params;
+  const tenant = db.getTenant(id);
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+  res.json(tenant);
+});
+
+app.put('/api/tenants/:id', (req, res) => {
+  const { id } = req.params;
+  const updated = db.updateTenantSettings(id, req.body);
+  if (!updated) return res.status(404).json({ error: 'Tenant not found' });
+  res.json(updated);
+});
+
+app.patch('/api/tenants/:id', (req, res) => {
+  const { id } = req.params;
+  const updated = db.updateTenantSettings(id, req.body);
+  if (!updated) return res.status(404).json({ error: 'Tenant not found' });
+  res.json(updated);
+});
+
+// --- STAFF & RBAC USERS ---
+app.get('/api/staff', (req, res) => {
+  const tenantId = (req.query.tenantId as string) || db.tenants[0]?.id;
+  const staff = db.getStaff(tenantId);
+  res.json(staff);
+});
+
+app.post('/api/staff', (req, res) => {
+  const { tenantId, name, role, pinCode, email, phone, assignedStation, branchId } = req.body;
+  const tId = tenantId || db.tenants[0]?.id;
+  if (!name || !pinCode) {
+    return res.status(400).json({ error: 'Staff name and PIN code are required' });
+  }
+  const created = db.createStaff(tId, {
+    name,
+    role: role || 'WAITER',
+    pinCode,
+    email,
+    phone,
+    assignedStation,
+    branchId,
+  });
+  res.status(201).json(created);
+});
+
+app.put('/api/staff/:id', (req, res) => {
+  const { id } = req.params;
+  const updated = db.updateStaff(id, req.body);
+  if (!updated) return res.status(404).json({ error: 'Staff member not found' });
+  res.json(updated);
+});
+
+app.delete('/api/staff/:id', (req, res) => {
+  const { id } = req.params;
+  const success = db.deleteStaff(id);
+  if (!success) return res.status(404).json({ error: 'Staff member not found' });
+  res.json({ success: true });
+});
+
+app.post('/api/staff/login-pin', (req, res) => {
+  const { tenantId, pinCode } = req.body;
+  const tId = tenantId || db.tenants[0]?.id;
+  if (!pinCode) return res.status(400).json({ error: 'PIN code is required' });
+
+  const user = db.authenticateStaffByPin(tId, pinCode);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid PIN or user account inactive' });
+  }
+  res.json({ success: true, user });
+});
+
+// --- KITCHEN STATIONS ---
+app.get('/api/stations', (req, res) => {
+  const tenantId = (req.query.tenantId as string) || db.tenants[0]?.id;
+  const stations = db.getTenantStations(tenantId);
+  res.json(stations);
+});
+
+app.post('/api/stations', (req, res) => {
+  const { tenantId, name, code, color, description } = req.body;
+  const tId = tenantId || db.tenants[0]?.id;
+  if (!name) return res.status(400).json({ error: 'Station name is required' });
+
+  try {
+    const station = db.addTenantStation(tId, { name, code, color, description });
+    res.status(201).json(station);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to create station' });
+  }
+});
+
+app.put('/api/stations/:id', (req, res) => {
+  const { id } = req.params;
+  const { tenantId, name, code, color, description, displayOrder } = req.body;
+  const tId = tenantId || db.tenants[0]?.id;
+  const updated = db.updateTenantStation(tId, id, { name, code, color, description, displayOrder });
+  if (!updated) return res.status(404).json({ error: 'Station not found' });
+  res.json(updated);
+});
+
+app.delete('/api/stations/:id', (req, res) => {
+  const { id } = req.params;
+  const tenantId = (req.query.tenantId as string) || (req.body?.tenantId as string) || db.tenants[0]?.id;
+  const result = db.deleteTenantStation(tenantId, id);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error || 'Failed to delete station' });
+  }
+  res.json({ success: true });
+});
+
+// --- SECURITY & VOID PASSWORD VERIFICATION ---
+app.post('/api/verify-void-password', (req, res) => {
+  const { tenantId, password } = req.body;
+  const tId = tenantId || db.tenants[0]?.id;
+  const tenant = db.getTenant(tId);
+
+  const expectedPassword = tenant?.voidPassword || '1234';
+  const provided = String(password || '').trim();
+
+  // Allow if matches tenant void password, or matches any admin/owner/manager staff PIN
+  const matchesVoidPassword = provided === expectedPassword;
+  const matchesManagerPin = db.staffUsers.some(
+    (s) => s.tenantId === tId && (s.role === 'OWNER' || s.role === 'SUPER_ADMIN' || s.role === 'MANAGER') && s.pinCode === provided
+  );
+
+  if (matchesVoidPassword || matchesManagerPin) {
+    return res.json({ valid: true });
+  }
+  return res.status(403).json({ valid: false, error: 'Invalid void authorization password' });
+});
+
 // --- BRANCHES ---
 app.get('/api/branches', (req, res) => {
   const tenantId = (req.query.tenantId as string) || db.tenants[0]?.id;
@@ -52,6 +184,159 @@ app.get('/api/menu', (req, res) => {
   const categories = db.categories.filter((c) => c.tenantId === tenantId);
   const products = db.getProducts(tenantId);
   res.json({ categories, products });
+});
+
+app.post('/api/categories', (req, res) => {
+  const { tenantId, name, icon, displayOrder } = req.body;
+  const tId = tenantId || db.tenants[0]?.id;
+
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: 'Category name is required' });
+  }
+
+  const newCategory = {
+    id: `cat-${Date.now()}`,
+    tenantId: tId,
+    name: String(name).trim(),
+    icon: icon ? String(icon).trim() : 'Utensils',
+    displayOrder: Number(displayOrder) || (db.categories.length + 1),
+  };
+
+  db.categories.push(newCategory);
+  res.status(201).json(newCategory);
+});
+
+app.put('/api/categories/:id', (req, res) => {
+  const { id } = req.params;
+  const category = db.categories.find((c) => c.id === id);
+  if (!category) {
+    return res.status(404).json({ error: 'Category not found' });
+  }
+
+  const { name, icon, displayOrder } = req.body;
+  if (name !== undefined) category.name = String(name).trim();
+  if (icon !== undefined) category.icon = String(icon).trim();
+  if (displayOrder !== undefined) category.displayOrder = Number(displayOrder);
+
+  res.json(category);
+});
+
+app.delete('/api/categories/:id', (req, res) => {
+  const { id } = req.params;
+  const index = db.categories.findIndex((c) => c.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Category not found' });
+  }
+
+  const category = db.categories[index];
+  // Check if products exist in category
+  const productsCount = db.products.filter((p) => p.categoryId === id).length;
+  if (productsCount > 0) {
+    return res.status(400).json({
+      error: `Cannot delete category "${category.name}" because it contains ${productsCount} item(s). Reassign or delete those items first.`,
+    });
+  }
+
+  db.categories.splice(index, 1);
+  res.json({ success: true, removedCategory: category });
+});
+
+app.post('/api/products', (req, res) => {
+  const { tenantId, name, categoryId, description, price, costPrice, isCombo, station, recipe, modifierGroups } = req.body;
+  const tId = tenantId || db.tenants[0]?.id;
+
+  if (!name || price === undefined) {
+    return res.status(400).json({ error: 'Product name and price are required' });
+  }
+
+  // Calculate cost price from recipe if not provided
+  let computedCost = Number(costPrice);
+  const recipeList = Array.isArray(recipe) ? recipe : [];
+  if (isNaN(computedCost) || computedCost <= 0) {
+    computedCost = recipeList.reduce((acc: number, r: any) => {
+      const ing = db.ingredients.find((i) => i.id === r.ingredientId);
+      const unitCost = Number(r.unitCost ?? ing?.costPerUnit ?? 0);
+      return acc + (Number(r.quantity) || 0) * unitCost;
+    }, 0);
+  }
+
+  const newProduct = {
+    id: `prod-${Date.now()}`,
+    tenantId: tId,
+    categoryId: categoryId || db.categories[0]?.id || 'cat-burgers',
+    name: String(name).trim(),
+    description: description ? String(description).trim() : '',
+    price: Number(Number(price).toFixed(2)),
+    costPrice: Number(Number(computedCost || 0).toFixed(2)),
+    isCombo: Boolean(isCombo),
+    is86d: false,
+    station: station || 'GRILL',
+    recipe: recipeList.map((r: any) => {
+      const ing = db.ingredients.find((i) => i.id === r.ingredientId);
+      return {
+        ingredientId: r.ingredientId,
+        ingredientName: r.ingredientName || ing?.name || 'Raw Material',
+        quantity: Number(r.quantity) || 1,
+        uom: r.uom || ing?.uom || 'pcs',
+        unitCost: Number(r.unitCost ?? ing?.costPerUnit ?? 0),
+      };
+    }),
+    modifierGroups: Array.isArray(modifierGroups) ? modifierGroups : [],
+  };
+
+  db.products.unshift(newProduct as any);
+  res.status(201).json(newProduct);
+});
+
+app.put('/api/products/:id', (req, res) => {
+  const { id } = req.params;
+  const product = db.products.find((p) => p.id === id);
+  if (!product) {
+    return res.status(404).json({ error: 'Product not found' });
+  }
+
+  const { name, categoryId, description, price, costPrice, isCombo, is86d, station, recipe, modifierGroups } = req.body;
+
+  if (name !== undefined) product.name = String(name).trim();
+  if (categoryId !== undefined) product.categoryId = categoryId;
+  if (description !== undefined) product.description = String(description).trim();
+  if (price !== undefined) product.price = Number(Number(price).toFixed(2));
+  if (isCombo !== undefined) product.isCombo = Boolean(isCombo);
+  if (is86d !== undefined) product.is86d = Boolean(is86d);
+  if (station !== undefined) product.station = station;
+  if (modifierGroups !== undefined && Array.isArray(modifierGroups)) product.modifierGroups = modifierGroups;
+
+  if (Array.isArray(recipe)) {
+    product.recipe = recipe.map((r: any) => {
+      const ing = db.ingredients.find((i) => i.id === r.ingredientId);
+      return {
+        ingredientId: r.ingredientId,
+        ingredientName: r.ingredientName || ing?.name || 'Raw Material',
+        quantity: Number(r.quantity) || 1,
+        uom: r.uom || ing?.uom || 'pcs',
+        unitCost: Number(r.unitCost ?? ing?.costPerUnit ?? 0),
+      };
+    });
+  }
+
+  if (costPrice !== undefined && !isNaN(Number(costPrice))) {
+    product.costPrice = Number(Number(costPrice).toFixed(2));
+  } else if (Array.isArray(recipe)) {
+    const computedCost = product.recipe.reduce((acc, r) => acc + (r.quantity || 0) * (r.unitCost || 0), 0);
+    product.costPrice = Number(Number(computedCost).toFixed(2));
+  }
+
+  res.json(product);
+});
+
+app.delete('/api/products/:id', (req, res) => {
+  const { id } = req.params;
+  const index = db.products.findIndex((p) => p.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Product not found' });
+  }
+  const removed = db.products.splice(index, 1)[0];
+  res.json({ success: true, removedProduct: removed });
 });
 
 const handleToggle86 = (req: express.Request, res: express.Response) => {
@@ -171,12 +456,14 @@ app.post('/api/orders/:id/items/:itemId/void', (req, res) => {
   removedItem.voidedAt = new Date().toISOString();
 
   // Recalculate totals
-  const subtotal = order.items.reduce((acc, i) => acc + (i.unitPrice ?? 0) * (i.quantity ?? 1), 0);
+  const subtotal = Number(order.items.reduce((acc, i) => acc + (i.unitPrice ?? 0) * (i.quantity ?? 1), 0).toFixed(2));
   const tenant = db.getTenant(order.tenantId);
   const taxRate = tenant?.taxRatePct ?? 15;
+  const discount = Number((order.discountAmount || 0).toFixed(2));
+  const taxable = Math.max(0, subtotal - discount);
   order.subtotal = subtotal;
-  order.taxAmount = (subtotal * taxRate) / 100;
-  order.total = order.subtotal + order.taxAmount - (order.discountAmount || 0);
+  order.taxAmount = Number(((taxable * taxRate) / 100).toFixed(2));
+  order.total = Number((taxable + order.taxAmount).toFixed(2));
 
   if (order.items.length === 0) {
     order.status = 'VOIDED';
@@ -277,35 +564,72 @@ app.post('/api/purchasing/orders/:id/receive', (req, res) => {
 // --- ACCOUNTING & FINANCIALS ---
 const getAccountingData = (tenantId: string, branchId: string) => {
   const entries = db.journalEntries.filter((j) => j.tenantId === tenantId && j.branchId === branchId);
-  const branchOrders = db.orders.filter((o) => o.tenantId === tenantId && o.branchId === branchId && o.status === 'PAID');
-  const grossSales = branchOrders.reduce((acc, o) => acc + o.subtotal, 0);
-  const netSales = branchOrders.reduce((acc, o) => acc + (o.subtotal - o.discountAmount), 0);
-  const totalTax = branchOrders.reduce((acc, o) => acc + o.taxAmount, 0);
+  const allBranchOrders = db.orders.filter((o) => o.tenantId === tenantId && o.branchId === branchId);
+  const paidOrders = allBranchOrders.filter((o) => o.status === 'PAID');
+  const openOrders = allBranchOrders.filter((o) => o.status !== 'PAID' && o.status !== 'VOIDED');
+  const voidedOrders = allBranchOrders.filter((o) => o.status === 'VOIDED');
+
+  const grossSales = Number(paidOrders.reduce((acc, o) => acc + (o.subtotal || 0), 0).toFixed(2));
+  const discounts = Number(paidOrders.reduce((acc, o) => acc + (o.discountAmount || 0), 0).toFixed(2));
+  const netSales = Number((grossSales - discounts).toFixed(2));
+  const taxCollected = Number(paidOrders.reduce((acc, o) => acc + (o.taxAmount || 0), 0).toFixed(2));
+  const totalCollected = Number(paidOrders.reduce((acc, o) => acc + (o.total || 0), 0).toFixed(2));
 
   let totalCogs = 0;
-  branchOrders.forEach((o) => {
+  paidOrders.forEach((o) => {
     o.items.forEach((item) => {
-      totalCogs += (item.costPrice || 0) * item.quantity;
+      totalCogs += (item.costPrice || 0) * (item.quantity || 1);
     });
   });
+  totalCogs = Number(totalCogs.toFixed(2));
 
-  const grossProfit = netSales - totalCogs;
-  const foodCostPct = netSales > 0 ? (totalCogs / netSales) * 100 : 0;
+  const grossProfit = Number((netSales - totalCogs).toFixed(2));
+  const foodCostPct = netSales > 0 ? Number(((totalCogs / netSales) * 100).toFixed(1)) : 0;
+
+  // Open orders metrics
+  const openOrdersCount = openOrders.length;
+  const openOrdersSubtotal = Number(openOrders.reduce((acc, o) => acc + (o.subtotal || 0), 0).toFixed(2));
+  const openOrdersTax = Number(openOrders.reduce((acc, o) => acc + (o.taxAmount || 0), 0).toFixed(2));
+  const openOrdersTotal = Number(openOrders.reduce((acc, o) => acc + (o.total || 0), 0).toFixed(2));
+
+  // Grand total orders amount (paid settled + open active)
+  const allOrdersAmount = Number((totalCollected + openOrdersTotal).toFixed(2));
+
+  // Payment Breakdown
+  const paymentBreakdown = {
+    CASH: Number(paidOrders.filter((o) => o.paymentMethod === 'CASH').reduce((acc, o) => acc + o.total, 0).toFixed(2)),
+    MADA: Number(paidOrders.filter((o) => o.paymentMethod === 'MADA').reduce((acc, o) => acc + o.total, 0).toFixed(2)),
+    VISA: Number(paidOrders.filter((o) => o.paymentMethod === 'VISA').reduce((acc, o) => acc + o.total, 0).toFixed(2)),
+    APPLE_PAY: Number(paidOrders.filter((o) => o.paymentMethod === 'APPLE_PAY').reduce((acc, o) => acc + o.total, 0).toFixed(2)),
+    SPLIT: Number(paidOrders.filter((o) => o.paymentMethod === 'SPLIT').reduce((acc, o) => acc + o.total, 0).toFixed(2)),
+  };
 
   return {
     journalEntries: entries,
+    allOrders: allBranchOrders,
+    paidOrders,
+    openOrders,
+    voidedOrders,
     summary: {
       grossSales,
-      discounts: grossSales - netSales,
+      discounts,
       netSales,
-      taxCollected: totalTax,
-      totalTax,
+      taxCollected,
+      totalTax: taxCollected,
+      totalCollected,
       cogs: totalCogs,
       grossProfit,
-      foodCostPct: Number(foodCostPct.toFixed(1)),
-      orderCount: branchOrders.length,
+      foodCostPct,
+      orderCount: paidOrders.length,
+      openOrdersCount,
+      openOrdersSubtotal,
+      openOrdersTax,
+      openOrdersTotal,
+      allOrdersAmount,
+      totalOrdersCount: allBranchOrders.length,
+      paymentBreakdown,
       operatingExpenses: 4500,
-      netProfit: grossProfit - 4500,
+      netProfit: Number((grossProfit - 4500).toFixed(2)),
     },
   };
 };

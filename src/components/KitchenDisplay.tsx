@@ -11,22 +11,26 @@ import {
   Filter,
   Check,
 } from 'lucide-react';
-import { Order, Tenant, KitchenStation } from '../types/restaurant';
+import { Order, Tenant, KitchenStation, StaffUser } from '../types/restaurant';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface KitchenDisplayProps {
   tenant: Tenant;
   orders: Order[];
   onBumpStatus: (orderId: string, nextStatus: 'PREPARING' | 'READY' | 'SERVED') => void;
+  currentUser?: StaffUser | null;
 }
 
 export const KitchenDisplay: React.FC<KitchenDisplayProps> = ({
   tenant,
   orders,
   onBumpStatus,
+  currentUser,
 }) => {
   const { t, tCatalog, isRTL } = useLanguage();
-  const [selectedStation, setSelectedStation] = useState<KitchenStation | 'ALL'>('ALL');
+  const [selectedStation, setSelectedStation] = useState<KitchenStation | 'ALL'>(
+    (currentUser?.assignedStation as KitchenStation) || 'ALL'
+  );
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
   // Filter only active kitchen orders
@@ -199,11 +203,17 @@ export const KitchenDisplay: React.FC<KitchenDisplayProps> = ({
 
                   {/* Order Items */}
                   <div className="p-3 space-y-2.5 flex-1 bg-slate-900/60 text-xs">
-                    {order.customerName && (
-                      <div className="text-[11px] text-slate-400 font-medium">
-                        {isRTL ? 'العميل: ' : 'Guest: '}<span className="text-slate-200">{order.customerName}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                      <span>
+                        {isRTL ? 'العميل: ' : 'Guest: '}
+                        <span className="text-slate-200 font-semibold">{order.customerName || 'Walk-in'}</span>
+                      </span>
+                      {(order.waiterName || order.cashierName) && (
+                        <span className="text-amber-300 font-mono text-[10px] bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+                          {order.waiterName ? `Server: ${order.waiterName}` : `POS: ${order.cashierName}`}
+                        </span>
+                      )}
+                    </div>
 
                     <div className="space-y-2 divide-y divide-slate-800/60">
                       {order.items

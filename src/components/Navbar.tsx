@@ -16,8 +16,11 @@ import {
   Clock,
   Sparkles,
   Languages,
+  Settings,
+  UserCheck,
+  Crown,
 } from 'lucide-react';
-import { Tenant, Branch, Shift } from '../types/restaurant';
+import { Tenant, Branch, Shift, StaffUser } from '../types/restaurant';
 import { useLanguage } from '../i18n/LanguageContext';
 
 export type ActiveModule =
@@ -31,6 +34,7 @@ export type ActiveModule =
   | 'PURCHASING'
   | 'ACCOUNTING'
   | 'ANALYTICS'
+  | 'SETUP'
   | 'SHIFT';
 
 interface NavbarProps {
@@ -46,6 +50,8 @@ interface NavbarProps {
   onOpenShiftModal: () => void;
   activeShift: Shift | null;
   kdsCount: number;
+  currentUser: StaffUser | null;
+  onOpenStaffModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -61,26 +67,55 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenShiftModal,
   activeShift,
   kdsCount,
+  currentUser,
+  onOpenStaffModal,
 }) => {
   const { language, toggleLanguage, t } = useLanguage();
 
-  const modules: { id: ActiveModule; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: 'POS', label: t('nav.modules.pos'), icon: <ShoppingCart className="w-4 h-4" /> },
-    { id: 'WAITER', label: t('nav.modules.waiter'), icon: <Smartphone className="w-4 h-4" /> },
+  const allModules: { id: ActiveModule; label: string; icon: React.ReactNode; badge?: number }[] = [
+    { id: 'SETUP', label: t('nav.modules.setup', 'Setup & Settings'), icon: <Settings className="w-4 h-4" /> },
+    { id: 'POS', label: t('nav.modules.pos', 'POS Cashier'), icon: <ShoppingCart className="w-4 h-4" /> },
+    { id: 'WAITER', label: t('nav.modules.waiter', 'Waiter App'), icon: <Smartphone className="w-4 h-4" /> },
     {
       id: 'KDS',
-      label: t('nav.modules.kds'),
+      label: t('nav.modules.kds', 'Kitchen KDS'),
       icon: <ChefHat className="w-4 h-4" />,
       badge: kdsCount > 0 ? kdsCount : undefined,
     },
-    { id: 'FLOOR', label: t('nav.modules.floor'), icon: <LayoutGrid className="w-4 h-4" /> },
-    { id: 'QR_ORDER', label: t('nav.modules.qr'), icon: <QrCode className="w-4 h-4" /> },
-    { id: 'MENU_RECIPES', label: t('nav.modules.menu'), icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'INVENTORY', label: t('nav.modules.inventory'), icon: <Package className="w-4 h-4" /> },
-    { id: 'PURCHASING', label: t('nav.modules.purchasing'), icon: <Truck className="w-4 h-4" /> },
-    { id: 'ACCOUNTING', label: t('nav.modules.accounting'), icon: <FileSpreadsheet className="w-4 h-4" /> },
-    { id: 'ANALYTICS', label: t('nav.modules.analytics'), icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'FLOOR', label: t('nav.modules.floor', 'Floor Plan'), icon: <LayoutGrid className="w-4 h-4" /> },
+    { id: 'QR_ORDER', label: t('nav.modules.qr', 'QR Menu'), icon: <QrCode className="w-4 h-4" /> },
+    { id: 'MENU_RECIPES', label: t('nav.modules.menu', 'Menu & Recipes'), icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'INVENTORY', label: t('nav.modules.inventory', 'Inventory'), icon: <Package className="w-4 h-4" /> },
+    { id: 'PURCHASING', label: t('nav.modules.purchasing', 'Purchasing'), icon: <Truck className="w-4 h-4" /> },
+    { id: 'ACCOUNTING', label: t('nav.modules.accounting', 'Accounting'), icon: <FileSpreadsheet className="w-4 h-4" /> },
+    { id: 'ANALYTICS', label: t('nav.modules.analytics', 'Analytics'), icon: <BarChart3 className="w-4 h-4" /> },
   ];
+
+  // Role-Based Access Control (RBAC):
+  // Admin/Owner/Manager -> See All modules
+  // Waiter -> See Waiter & Floor only
+  // Cashier -> See POS only
+  // Kitchen -> See KDS only
+  // Accountant -> See Accounting & Analytics only
+  const userRole = currentUser?.role || 'OWNER';
+  const modules = allModules.filter((m) => {
+    if (userRole === 'OWNER' || userRole === 'SUPER_ADMIN' || userRole === 'MANAGER') {
+      return true;
+    }
+    if (userRole === 'WAITER') {
+      return m.id === 'WAITER' || m.id === 'FLOOR';
+    }
+    if (userRole === 'CASHIER') {
+      return m.id === 'POS';
+    }
+    if (userRole === 'KITCHEN') {
+      return m.id === 'KDS';
+    }
+    if (userRole === 'ACCOUNTANT') {
+      return m.id === 'ACCOUNTING' || m.id === 'ANALYTICS';
+    }
+    return true;
+  });
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-slate-100 select-none">
@@ -167,6 +202,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>
               {t('nav.shift')}{' '}
               {activeShift?.status === 'OPEN' ? t('nav.shiftOpen') : t('nav.shiftClosed')}
+            </span>
+          </button>
+
+          {/* Current Staff User / Switcher */}
+          <button
+            id="staff-switch-navbar-btn"
+            type="button"
+            onClick={onOpenStaffModal}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800/90 border border-slate-700 hover:border-amber-500/50 hover:bg-slate-800 text-white transition shadow-sm"
+            title="Switch User / PIN Terminal Login"
+          >
+            <div className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-bold">
+              {currentUser ? currentUser.name.slice(0, 1).toUpperCase() : '👤'}
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="text-[9px] text-slate-400 font-semibold leading-none">
+                {currentUser?.role ? currentUser.role.replace('_', ' ') : 'Staff'}
+              </span>
+              <span className="text-xs font-bold text-amber-300 leading-tight truncate max-w-[90px]">
+                {currentUser?.name || 'Log In'}
+              </span>
+            </div>
+            <span className="ml-0.5 text-[10px] px-1.5 py-0.5 rounded bg-slate-700/60 text-slate-300">
+              PIN ⟳
             </span>
           </button>
 

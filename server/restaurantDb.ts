@@ -11,7 +11,17 @@ import {
   JournalEntry,
   Shift,
   KitchenStation,
+  StaffUser,
+  StationConfig,
 } from '../src/types/restaurant';
+
+export const DEFAULT_STATIONS: StationConfig[] = [
+  { id: 'st-grill', name: 'Grill Station', code: 'GRILL', color: '#f97316', description: 'Burgers, Steaks, Buns & Hot Line' },
+  { id: 'st-fryer', name: 'Fryer Station', code: 'FRYER', color: '#eab308', description: 'Loaded Fries, Wings, Crispy Tenders' },
+  { id: 'st-cold', name: 'Cold Prep & Salad', code: 'COLD', color: '#10b981', description: 'Fresh Salads, Cold Starters, Pickles' },
+  { id: 'st-drinks', name: 'Beverages & Bar', code: 'DRINKS', color: '#06b6d4', description: 'Soft Drinks, Mojitos, Specialty Coffee' },
+  { id: 'st-oven', name: 'Oven & Bakery', code: 'OVEN', color: '#a855f7', description: 'Fresh Breads, Molten Cakes, Pizzas' },
+];
 
 // In-Memory Multi-Tenant Restaurant Database Store
 class RestaurantDatabase {
@@ -19,22 +29,137 @@ class RestaurantDatabase {
     {
       id: 'tenant-sultan',
       name: 'Sultan Burger & Smokehouse',
+      legalName: 'Sultan Hospitality Group LLC',
       slug: 'sultan-burger',
       country: 'Saudi Arabia',
       currency: 'SAR',
+      currencySymbol: '﷼',
       taxRatePct: 15,
       taxName: 'ZATCA VAT 15%',
+      serviceChargePct: 0,
+      voidPassword: '1234',
+      stations: [...DEFAULT_STATIONS],
+      phone: '+966 11 456 7890',
+      address: 'King Fahd Road, Al Olaya District, Riyadh',
       createdAt: '2025-01-15T08:00:00Z',
     },
     {
       id: 'tenant-zaatar',
       name: 'Zaatar & Olive Bistro',
+      legalName: 'Zaatar & Olive F&B LLC',
       slug: 'zaatar-olive',
       country: 'United Arab Emirates',
       currency: 'AED',
+      currencySymbol: 'د.إ',
       taxRatePct: 5,
       taxName: 'UAE FTA VAT 5%',
+      serviceChargePct: 5,
+      voidPassword: '1234',
+      stations: [...DEFAULT_STATIONS],
+      phone: '+971 4 399 1234',
+      address: 'Marina Walk, Dubai Marina, Dubai',
       createdAt: '2025-02-10T09:00:00Z',
+    },
+  ];
+
+  public staffUsers: StaffUser[] = [
+    {
+      id: 'staff-sultan-admin',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      name: 'Sultan Al-Otaibi',
+      email: 'sultan@sultanburger.sa',
+      phone: '+966 50 123 4567',
+      role: 'OWNER',
+      pinCode: '1111',
+      isActive: true,
+      createdAt: '2025-01-15T08:00:00Z',
+    },
+    {
+      id: 'staff-sultan-mgr',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      name: 'Layla Al-Khatib',
+      email: 'layla.mgr@sultanburger.sa',
+      phone: '+966 55 987 6543',
+      role: 'MANAGER',
+      pinCode: '2222',
+      isActive: true,
+      createdAt: '2025-01-16T08:00:00Z',
+    },
+    {
+      id: 'staff-sultan-cashier',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      name: 'Ahmad Cashier',
+      email: 'ahmad@sultanburger.sa',
+      phone: '+966 54 333 4444',
+      role: 'CASHIER',
+      pinCode: '3333',
+      isActive: true,
+      createdAt: '2025-01-18T08:00:00Z',
+    },
+    {
+      id: 'staff-sultan-waiter',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      name: 'Tariq Mansoor',
+      email: 'tariq@sultanburger.sa',
+      phone: '+966 56 555 6666',
+      role: 'WAITER',
+      pinCode: '4444',
+      isActive: true,
+      createdAt: '2025-01-19T08:00:00Z',
+    },
+    {
+      id: 'staff-sultan-kitchen',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      name: 'Chef Marco',
+      email: 'marco.kitchen@sultanburger.sa',
+      phone: '+966 59 777 8888',
+      role: 'KITCHEN',
+      assignedStation: 'GRILL',
+      pinCode: '5555',
+      isActive: true,
+      createdAt: '2025-01-20T08:00:00Z',
+    },
+    {
+      id: 'staff-sultan-accountant',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      name: 'Fatima Al-Hassan',
+      email: 'fatima.fin@sultanburger.sa',
+      phone: '+966 53 111 2222',
+      role: 'ACCOUNTANT',
+      pinCode: '6666',
+      isActive: true,
+      createdAt: '2025-01-22T08:00:00Z',
+    },
+    // zaatar staff
+    {
+      id: 'staff-zaatar-admin',
+      tenantId: 'tenant-zaatar',
+      branchId: 'branch-dubai',
+      name: 'Ziad Al-Nuaimi',
+      email: 'ziad@zaatarolive.ae',
+      phone: '+971 50 111 2233',
+      role: 'OWNER',
+      pinCode: '1111',
+      isActive: true,
+      createdAt: '2025-02-10T09:00:00Z',
+    },
+    {
+      id: 'staff-zaatar-cashier',
+      tenantId: 'tenant-zaatar',
+      branchId: 'branch-dubai',
+      name: 'Rami Cashier',
+      email: 'rami@zaatarolive.ae',
+      phone: '+971 50 333 4455',
+      role: 'CASHIER',
+      pinCode: '3333',
+      isActive: true,
+      createdAt: '2025-02-11T09:00:00Z',
     },
   ];
 
@@ -329,9 +454,9 @@ class RestaurantDatabase {
       waiterName: 'Fahad Al-Harbi',
       cashierName: 'Ahmad Cashier',
       subtotal: 116,
-      taxAmount: 17.4,
+      taxAmount: 15.9,
       discountAmount: 10,
-      total: 123.4,
+      total: 121.9,
       items: [
         {
           id: 'item-2',
@@ -357,6 +482,299 @@ class RestaurantDatabase {
         },
       ],
       createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'ord-100',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      orderNumber: '#4079',
+      type: 'DINE_IN',
+      tableId: 'tbl-1',
+      tableName: 'T-01',
+      customerName: 'Yazeed Al-Rajhi',
+      status: 'PAID',
+      paymentMethod: 'MADA',
+      waiterName: 'Tariq Mansoor',
+      cashierName: 'Ahmad Cashier',
+      subtotal: 90,
+      discountAmount: 10,
+      taxAmount: 12,
+      total: 92,
+      items: [
+        {
+          id: 'item-100-1',
+          productId: 'prod-truffle-angus',
+          productName: 'Truffle Angus Burger',
+          quantity: 1,
+          unitPrice: 48,
+          costPrice: 13.9,
+          station: 'GRILL',
+          modifiers: [],
+          status: 'SERVED',
+        },
+        {
+          id: 'item-100-2',
+          productId: 'prod-lemonade',
+          productName: 'Fresh Mint Lemonade',
+          quantity: 1,
+          unitPrice: 18,
+          costPrice: 2.4,
+          station: 'DRINKS',
+          modifiers: [],
+          status: 'SERVED',
+        },
+        {
+          id: 'item-100-3',
+          productId: 'prod-parm-fries',
+          productName: 'Truffle Parmesan Fries',
+          quantity: 1,
+          unitPrice: 24,
+          costPrice: 5.6,
+          station: 'FRYER',
+          modifiers: [],
+          status: 'SERVED',
+        },
+      ],
+      createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+      paidAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'ord-99',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      orderNumber: '#4078',
+      type: 'TAKEAWAY',
+      customerName: 'Sami Al-Harbi',
+      status: 'PAID',
+      paymentMethod: 'CASH',
+      waiterName: 'Ahmad Cashier',
+      cashierName: 'Ahmad Cashier',
+      subtotal: 122,
+      discountAmount: 0,
+      taxAmount: 18.3,
+      total: 140.3,
+      items: [
+        {
+          id: 'item-99-1',
+          productId: 'prod-smoked-brisket',
+          productName: '14-Hr Smoked Brisket Burger',
+          quantity: 1,
+          unitPrice: 54,
+          costPrice: 16.5,
+          station: 'GRILL',
+          modifiers: [],
+          status: 'SERVED',
+        },
+        {
+          id: 'item-99-2',
+          productId: 'prod-truffle-combo',
+          productName: 'Truffle Master Combo Meal',
+          quantity: 1,
+          unitPrice: 68,
+          costPrice: 18.2,
+          station: 'GRILL',
+          modifiers: [],
+          status: 'SERVED',
+        },
+      ],
+      createdAt: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
+      paidAt: new Date(Date.now() - 65 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'ord-98',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      orderNumber: '#4077',
+      type: 'DINE_IN',
+      tableId: 'tbl-4',
+      tableName: 'T-04',
+      customerName: 'Noura Al-Dosari',
+      status: 'PAID',
+      paymentMethod: 'VISA',
+      waiterName: 'Fahad Al-Harbi',
+      cashierName: 'Ahmad Cashier',
+      subtotal: 192,
+      discountAmount: 20,
+      taxAmount: 25.8,
+      total: 197.8,
+      items: [
+        {
+          id: 'item-98-1',
+          productId: 'prod-truffle-angus',
+          productName: 'Truffle Angus Burger',
+          quantity: 2,
+          unitPrice: 48,
+          costPrice: 13.9,
+          station: 'GRILL',
+          modifiers: [],
+          status: 'SERVED',
+        },
+        {
+          id: 'item-98-2',
+          productId: 'prod-truffle-combo',
+          productName: 'Truffle Master Combo Meal',
+          quantity: 1,
+          unitPrice: 68,
+          costPrice: 18.2,
+          station: 'GRILL',
+          modifiers: [],
+          status: 'SERVED',
+        },
+        {
+          id: 'item-98-3',
+          productId: 'prod-water',
+          productName: 'San Pellegrino Sparkling Water',
+          quantity: 2,
+          unitPrice: 14,
+          costPrice: 3.0,
+          station: 'DRINKS',
+          modifiers: [],
+          status: 'SERVED',
+        },
+      ],
+      createdAt: new Date(Date.now() - 110 * 60 * 1000).toISOString(),
+      paidAt: new Date(Date.now() - 95 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'ord-97',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      orderNumber: '#4076',
+      type: 'TAKEAWAY',
+      customerName: 'Omar Farooq',
+      status: 'PAID',
+      paymentMethod: 'APPLE_PAY',
+      waiterName: 'Ahmad Cashier',
+      cashierName: 'Ahmad Cashier',
+      subtotal: 128,
+      discountAmount: 0,
+      taxAmount: 19.2,
+      total: 147.2,
+      items: [
+        {
+          id: 'item-97-1',
+          productId: 'prod-truffle-angus',
+          productName: 'Truffle Angus Burger',
+          quantity: 2,
+          unitPrice: 48,
+          costPrice: 13.9,
+          station: 'GRILL',
+          modifiers: [],
+          status: 'SERVED',
+        },
+        {
+          id: 'item-97-2',
+          productId: 'prod-molten',
+          productName: 'Salted Caramel Molten Cake',
+          quantity: 1,
+          unitPrice: 32,
+          costPrice: 7.8,
+          station: 'OVEN',
+          modifiers: [],
+          status: 'SERVED',
+        },
+      ],
+      createdAt: new Date(Date.now() - 150 * 60 * 1000).toISOString(),
+      paidAt: new Date(Date.now() - 140 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'ord-96',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      orderNumber: '#4075',
+      type: 'DINE_IN',
+      tableId: 'tbl-5',
+      tableName: 'T-05',
+      customerName: 'Rakan Al-Ghamdi',
+      status: 'PAID',
+      paymentMethod: 'CASH',
+      waiterName: 'Tariq Mansoor',
+      cashierName: 'Ahmad Cashier',
+      subtotal: 84,
+      discountAmount: 0,
+      taxAmount: 12.6,
+      total: 96.6,
+      items: [
+        {
+          id: 'item-96-1',
+          productId: 'prod-smash-burger',
+          productName: 'Double Smash Cheeseburger',
+          quantity: 1,
+          unitPrice: 42,
+          costPrice: 11.4,
+          station: 'GRILL',
+          modifiers: [],
+          status: 'SERVED',
+        },
+        {
+          id: 'item-96-2',
+          productId: 'prod-parm-fries',
+          productName: 'Truffle Parmesan Fries',
+          quantity: 1,
+          unitPrice: 24,
+          costPrice: 5.6,
+          station: 'FRYER',
+          modifiers: [],
+          status: 'SERVED',
+        },
+        {
+          id: 'item-96-3',
+          productId: 'prod-lemonade',
+          productName: 'Fresh Mint Lemonade',
+          quantity: 1,
+          unitPrice: 18,
+          costPrice: 2.4,
+          station: 'DRINKS',
+          modifiers: [],
+          status: 'SERVED',
+        },
+      ],
+      createdAt: new Date(Date.now() - 190 * 60 * 1000).toISOString(),
+      paidAt: new Date(Date.now() - 175 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'ord-95',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      orderNumber: '#4074',
+      type: 'QR_SELF_ORDER',
+      tableId: 'tbl-6',
+      tableName: 'T-06',
+      customerName: 'Bandar Al-Otaibi',
+      status: 'PAID',
+      paymentMethod: 'MADA',
+      waiterName: 'Tariq Mansoor',
+      cashierName: 'Ahmad Cashier',
+      subtotal: 150,
+      discountAmount: 10,
+      taxAmount: 21,
+      total: 161,
+      items: [
+        {
+          id: 'item-95-1',
+          productId: 'prod-truffle-combo',
+          productName: 'Truffle Master Combo Meal',
+          quantity: 2,
+          unitPrice: 68,
+          costPrice: 18.2,
+          station: 'GRILL',
+          modifiers: [],
+          status: 'SERVED',
+        },
+        {
+          id: 'item-95-2',
+          productId: 'prod-water',
+          productName: 'San Pellegrino Sparkling Water',
+          quantity: 1,
+          unitPrice: 14,
+          costPrice: 3.0,
+          station: 'DRINKS',
+          modifiers: [],
+          status: 'SERVED',
+        },
+      ],
+      createdAt: new Date(Date.now() - 230 * 60 * 1000).toISOString(),
+      paidAt: new Date(Date.now() - 215 * 60 * 1000).toISOString(),
     },
   ];
 
@@ -437,8 +855,133 @@ class RestaurantDatabase {
       reference: 'COGS-4079',
       description: 'Automatic COGS Depletion for #4079',
       lines: [
-        { accountCode: '5010', accountName: 'Cost of Goods Sold (BOM Food Cost)', debit: 24.5, credit: 0 },
-        { accountCode: '1100', accountName: 'Raw Ingredient Inventory Asset', debit: 0, credit: 24.5 },
+        { accountCode: '5010', accountName: 'Cost of Goods Sold (BOM Food Cost)', debit: 21.9, credit: 0 },
+        { accountCode: '1100', accountName: 'Raw Ingredient Inventory Asset', debit: 0, credit: 21.9 },
+      ],
+    },
+    {
+      id: 'je-init-2',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'INV-4078',
+      description: 'POS Sales Receipt #4078 via Cash',
+      lines: [
+        { accountCode: '1010', accountName: 'Cash in Register Till', debit: 140.3, credit: 0 },
+        { accountCode: '4010', accountName: 'Food & Beverage Revenue', debit: 0, credit: 122.0 },
+        { accountCode: '2200', accountName: 'ZATCA Output VAT 15%', debit: 0, credit: 18.3 },
+      ],
+    },
+    {
+      id: 'je-cogs-2',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'COGS-4078',
+      description: 'Automatic COGS Depletion for #4078',
+      lines: [
+        { accountCode: '5010', accountName: 'Cost of Goods Sold (BOM Food Cost)', debit: 34.7, credit: 0 },
+        { accountCode: '1100', accountName: 'Raw Ingredient Inventory Asset', debit: 0, credit: 34.7 },
+      ],
+    },
+    {
+      id: 'je-init-3',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'INV-4077',
+      description: 'POS Sales Receipt #4077 via Visa Card',
+      lines: [
+        { accountCode: '1020', accountName: 'Visa Merchant Clearing', debit: 197.8, credit: 0 },
+        { accountCode: '4010', accountName: 'Food & Beverage Revenue', debit: 0, credit: 172.0 },
+        { accountCode: '2200', accountName: 'ZATCA Output VAT 15%', debit: 0, credit: 25.8 },
+      ],
+    },
+    {
+      id: 'je-cogs-3',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'COGS-4077',
+      description: 'Automatic COGS Depletion for #4077',
+      lines: [
+        { accountCode: '5010', accountName: 'Cost of Goods Sold (BOM Food Cost)', debit: 52.0, credit: 0 },
+        { accountCode: '1100', accountName: 'Raw Ingredient Inventory Asset', debit: 0, credit: 52.0 },
+      ],
+    },
+    {
+      id: 'je-init-4',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'INV-4076',
+      description: 'POS Sales Receipt #4076 via Apple Pay',
+      lines: [
+        { accountCode: '1020', accountName: 'Apple Pay Clearing', debit: 147.2, credit: 0 },
+        { accountCode: '4010', accountName: 'Food & Beverage Revenue', debit: 0, credit: 128.0 },
+        { accountCode: '2200', accountName: 'ZATCA Output VAT 15%', debit: 0, credit: 19.2 },
+      ],
+    },
+    {
+      id: 'je-cogs-4',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'COGS-4076',
+      description: 'Automatic COGS Depletion for #4076',
+      lines: [
+        { accountCode: '5010', accountName: 'Cost of Goods Sold (BOM Food Cost)', debit: 35.6, credit: 0 },
+        { accountCode: '1100', accountName: 'Raw Ingredient Inventory Asset', debit: 0, credit: 35.6 },
+      ],
+    },
+    {
+      id: 'je-init-5',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'INV-4075',
+      description: 'POS Sales Receipt #4075 via Cash',
+      lines: [
+        { accountCode: '1010', accountName: 'Cash in Register Till', debit: 96.6, credit: 0 },
+        { accountCode: '4010', accountName: 'Food & Beverage Revenue', debit: 0, credit: 84.0 },
+        { accountCode: '2200', accountName: 'ZATCA Output VAT 15%', debit: 0, credit: 12.6 },
+      ],
+    },
+    {
+      id: 'je-cogs-5',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'COGS-4075',
+      description: 'Automatic COGS Depletion for #4075',
+      lines: [
+        { accountCode: '5010', accountName: 'Cost of Goods Sold (BOM Food Cost)', debit: 19.4, credit: 0 },
+        { accountCode: '1100', accountName: 'Raw Ingredient Inventory Asset', debit: 0, credit: 19.4 },
+      ],
+    },
+    {
+      id: 'je-init-6',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'INV-4074',
+      description: 'POS Sales Receipt #4074 via Mada Card',
+      lines: [
+        { accountCode: '1020', accountName: 'Mada / Card Bank Clearing', debit: 161.0, credit: 0 },
+        { accountCode: '4010', accountName: 'Food & Beverage Revenue', debit: 0, credit: 140.0 },
+        { accountCode: '2200', accountName: 'ZATCA Output VAT 15%', debit: 0, credit: 21.0 },
+      ],
+    },
+    {
+      id: 'je-cogs-6',
+      tenantId: 'tenant-sultan',
+      branchId: 'branch-olaya',
+      date: '2026-09-07',
+      reference: 'COGS-4074',
+      description: 'Automatic COGS Depletion for #4074',
+      lines: [
+        { accountCode: '5010', accountName: 'Cost of Goods Sold (BOM Food Cost)', debit: 39.4, credit: 0 },
+        { accountCode: '1100', accountName: 'Raw Ingredient Inventory Asset', debit: 0, credit: 39.4 },
       ],
     },
   ];
@@ -452,11 +995,11 @@ class RestaurantDatabase {
       openedAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
       startingFloat: 500,
       openingFloat: 500,
-      cashSalesCollected: 480,
-      expectedCash: 980,
+      cashSalesCollected: 236.9,
+      expectedCash: 736.9,
       status: 'OPEN',
-      totalSales: 2480,
-      orderCount: 18,
+      totalSales: 834.9,
+      orderCount: 6,
     },
   ];
 
@@ -488,6 +1031,34 @@ class RestaurantDatabase {
   // Create new Order with Recipe BOM auto-deduction
   public createOrder(tenantId: string, branchId: string, payload: Partial<Order>): Order {
     const orderNumber = `#${4000 + this.orders.length + 1}`;
+    const items = (payload.items || []).map((item, idx) => {
+      let costPrice = item.costPrice;
+      if (!costPrice) {
+        const prod = this.products.find(p => p.id === item.productId);
+        costPrice = prod?.costPrice || 0;
+      }
+      return {
+        ...item,
+        id: item.id || `item-${Date.now()}-${idx}`,
+        costPrice,
+        quantity: item.quantity || 1,
+        unitPrice: Number((item.unitPrice || 0).toFixed(2)),
+      };
+    });
+
+    const calculatedSubtotal = Number(
+      items.reduce((acc, i) => acc + (i.unitPrice || 0) * (i.quantity || 1), 0).toFixed(2)
+    );
+    const subtotal = payload.subtotal !== undefined ? Number(Number(payload.subtotal).toFixed(2)) : calculatedSubtotal;
+    const discountAmount = Number((payload.discountAmount || 0).toFixed(2));
+    const tenant = this.getTenant(tenantId);
+    const taxRate = tenant?.taxRatePct ?? 15;
+    const taxableAmount = Math.max(0, subtotal - discountAmount);
+    const calculatedTax = Number(((taxableAmount * taxRate) / 100).toFixed(2));
+    const taxAmount = payload.taxAmount !== undefined ? Number(Number(payload.taxAmount).toFixed(2)) : calculatedTax;
+    const calculatedTotal = Number((taxableAmount + taxAmount).toFixed(2));
+    const total = payload.total !== undefined ? Number(Number(payload.total).toFixed(2)) : calculatedTotal;
+
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
       tenantId,
@@ -498,14 +1069,16 @@ class RestaurantDatabase {
       tableName: payload.tableName,
       customerName: payload.customerName || 'Guest Customer',
       status: payload.status || 'NEW',
-      items: payload.items || [],
-      subtotal: payload.subtotal || 0,
-      taxAmount: payload.taxAmount || 0,
-      discountAmount: payload.discountAmount || 0,
-      total: payload.total || 0,
+      items,
+      subtotal,
+      taxAmount,
+      discountAmount,
+      total,
       notes: payload.notes,
-      waiterName: payload.waiterName || 'POS Cashier',
-      cashierName: payload.cashierName || 'POS Terminal 1',
+      waiterName: payload.waiterName || (payload.createdByUserRole === 'WAITER' ? 'Waiter' : undefined),
+      cashierName: payload.cashierName || (payload.createdByUserRole === 'CASHIER' ? 'Cashier' : undefined),
+      createdByUserId: payload.createdByUserId,
+      createdByUserRole: payload.createdByUserRole,
       createdAt: new Date().toISOString(),
     };
 
@@ -577,6 +1150,7 @@ class RestaurantDatabase {
     const accountCode = paymentMethod === 'CASH' ? '1010' : '1020';
     const accountName = paymentMethod === 'CASH' ? 'Cash in Register Till' : `${paymentMethod} Merchant Clearing`;
 
+    const netSales = Number((order.subtotal - (order.discountAmount || 0)).toFixed(2));
     const salesEntry: JournalEntry = {
       id: `je-sale-${Date.now()}`,
       tenantId: order.tenantId,
@@ -586,19 +1160,42 @@ class RestaurantDatabase {
       description: `Sale Receipt for ${order.orderNumber} via ${paymentMethod}`,
       lines: [
         { accountCode, accountName, debit: order.total, credit: 0 },
-        { accountCode: '4010', accountName: 'Food & Beverage Sales Revenue', debit: 0, credit: order.subtotal - order.discountAmount },
+        { accountCode: '4010', accountName: 'Food & Beverage Sales Revenue', debit: 0, credit: netSales },
         { accountCode: '2200', accountName: `${tenant?.taxName || 'Output Tax'} Payable`, debit: 0, credit: order.taxAmount },
       ],
     };
     this.journalEntries.unshift(salesEntry);
 
+    // Calculate COGS and generate COGS inventory depletion entry
+    let totalCogs = 0;
+    order.items.forEach((item) => {
+      totalCogs += (item.costPrice || 0) * (item.quantity || 1);
+    });
+    totalCogs = Number(totalCogs.toFixed(2));
+    if (totalCogs > 0) {
+      const cogsEntry: JournalEntry = {
+        id: `je-cogs-${Date.now()}`,
+        tenantId: order.tenantId,
+        branchId: order.branchId,
+        date: new Date().toISOString().split('T')[0],
+        reference: `COGS-${order.orderNumber}`,
+        description: `Automatic COGS Depletion for ${order.orderNumber}`,
+        lines: [
+          { accountCode: '5010', accountName: 'Cost of Goods Sold (BOM Food Cost)', debit: totalCogs, credit: 0 },
+          { accountCode: '1100', accountName: 'Raw Ingredient Inventory Asset', debit: 0, credit: totalCogs },
+        ],
+      };
+      this.journalEntries.unshift(cogsEntry);
+    }
+
     // Also update shift
     const openShift = this.shifts.find((s) => s.branchId === order.branchId && s.status === 'OPEN');
     if (openShift) {
-      openShift.totalSales += order.total;
+      openShift.totalSales = Number((openShift.totalSales + order.total).toFixed(2));
       openShift.orderCount += 1;
       if (paymentMethod === 'CASH') {
-        openShift.expectedCash += order.total;
+        openShift.expectedCash = Number((openShift.expectedCash + order.total).toFixed(2));
+        openShift.cashSalesCollected = Number(((openShift.cashSalesCollected || 0) + order.total).toFixed(2));
       }
     }
 
@@ -653,6 +1250,152 @@ class RestaurantDatabase {
     return po;
   }
 
+  // --- STAFF & RBAC METHODS ---
+  public getStaff(tenantId?: string): StaffUser[] {
+    const tId = tenantId || this.tenants[0]?.id;
+    return this.staffUsers.filter((u) => u.tenantId === tId);
+  }
+
+  public createStaff(tenantId: string, data: Partial<StaffUser>): StaffUser {
+    const newStaff: StaffUser = {
+      id: `staff-${Date.now()}`,
+      tenantId,
+      branchId: data.branchId || this.branches.find((b) => b.tenantId === tenantId)?.id,
+      name: data.name?.trim() || 'Staff Member',
+      email: data.email?.trim() || '',
+      phone: data.phone?.trim() || '',
+      role: data.role || 'WAITER',
+      pinCode: data.pinCode?.trim() || '1234',
+      assignedStation: data.assignedStation || undefined,
+      isActive: data.isActive !== undefined ? data.isActive : true,
+      createdAt: new Date().toISOString(),
+    };
+    this.staffUsers.push(newStaff);
+    return newStaff;
+  }
+
+  public updateStaff(staffId: string, data: Partial<StaffUser>): StaffUser | undefined {
+    const staff = this.staffUsers.find((s) => s.id === staffId);
+    if (!staff) return undefined;
+
+    if (data.name !== undefined) staff.name = data.name.trim();
+    if (data.email !== undefined) staff.email = data.email.trim();
+    if (data.phone !== undefined) staff.phone = data.phone.trim();
+    if (data.role !== undefined) staff.role = data.role;
+    if (data.pinCode !== undefined) staff.pinCode = data.pinCode.trim();
+    if (data.assignedStation !== undefined) staff.assignedStation = data.assignedStation;
+    if (data.isActive !== undefined) staff.isActive = data.isActive;
+    if (data.branchId !== undefined) staff.branchId = data.branchId;
+
+    return staff;
+  }
+
+  public deleteStaff(staffId: string): boolean {
+    const index = this.staffUsers.findIndex((s) => s.id === staffId);
+    if (index === -1) return false;
+    this.staffUsers.splice(index, 1);
+    return true;
+  }
+
+  public authenticateStaffByPin(tenantId: string, pinCode: string): StaffUser | undefined {
+    return this.staffUsers.find(
+      (s) => s.tenantId === tenantId && s.pinCode === pinCode.trim() && s.isActive
+    );
+  }
+
+  // --- KITCHEN STATIONS METHODS ---
+  public getTenantStations(tenantId?: string): StationConfig[] {
+    const tenant = this.getTenant(tenantId || this.tenants[0]?.id);
+    if (!tenant) return DEFAULT_STATIONS;
+    if (!tenant.stations || tenant.stations.length === 0) {
+      tenant.stations = [...DEFAULT_STATIONS];
+    }
+    return tenant.stations;
+  }
+
+  public addTenantStation(tenantId: string, data: Partial<StationConfig>): StationConfig {
+    const tenant = this.getTenant(tenantId);
+    if (!tenant) throw new Error('Tenant not found');
+    if (!tenant.stations) tenant.stations = [...DEFAULT_STATIONS];
+
+    const code = (data.code || data.name || 'STATION')
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '_')
+      .slice(0, 16);
+
+    const newStation: StationConfig = {
+      id: `st-${Date.now()}`,
+      name: data.name?.trim() || 'New Station',
+      code,
+      color: data.color || '#f59e0b',
+      description: data.description?.trim() || '',
+      displayOrder: tenant.stations.length + 1,
+    };
+
+    tenant.stations.push(newStation);
+    return newStation;
+  }
+
+  public updateTenantStation(tenantId: string, stationId: string, data: Partial<StationConfig>): StationConfig | undefined {
+    const tenant = this.getTenant(tenantId);
+    if (!tenant || !tenant.stations) return undefined;
+    const station = tenant.stations.find((s) => s.id === stationId || s.code === stationId);
+    if (!station) return undefined;
+
+    if (data.name !== undefined) station.name = data.name.trim();
+    if (data.color !== undefined) station.color = data.color;
+    if (data.description !== undefined) station.description = data.description.trim();
+    if (data.code !== undefined) {
+      station.code = data.code.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+    }
+    if (data.displayOrder !== undefined) station.displayOrder = Number(data.displayOrder);
+
+    return station;
+  }
+
+  public deleteTenantStation(tenantId: string, stationId: string): { success: boolean; error?: string } {
+    const tenant = this.getTenant(tenantId);
+    if (!tenant || !tenant.stations) return { success: false, error: 'Tenant not found' };
+
+    const index = tenant.stations.findIndex((s) => s.id === stationId || s.code === stationId);
+    if (index === -1) return { success: false, error: 'Station not found' };
+
+    const station = tenant.stations[index];
+    // Check if any product is assigned to this station code
+    const assignedProducts = this.products.filter(
+      (p) => p.tenantId === tenantId && (p.station === station.code || p.station === station.id)
+    );
+    if (assignedProducts.length > 0) {
+      return {
+        success: false,
+        error: `Cannot delete station "${station.name}" because ${assignedProducts.length} menu item(s) are assigned to it. Reassign those items first.`,
+      };
+    }
+
+    tenant.stations.splice(index, 1);
+    return { success: true };
+  }
+
+  // --- TENANT SETTINGS UPDATE ---
+  public updateTenantSettings(tenantId: string, data: Partial<Tenant>): Tenant | undefined {
+    const tenant = this.getTenant(tenantId);
+    if (!tenant) return undefined;
+
+    if (data.name !== undefined && data.name.trim()) tenant.name = data.name.trim();
+    if (data.legalName !== undefined) tenant.legalName = data.legalName.trim();
+    if (data.country !== undefined && data.country.trim()) tenant.country = data.country.trim();
+    if (data.currency !== undefined && data.currency.trim()) tenant.currency = data.currency.trim().toUpperCase();
+    if (data.currencySymbol !== undefined) tenant.currencySymbol = data.currencySymbol.trim();
+    if (data.taxRatePct !== undefined) tenant.taxRatePct = Math.max(0, Number(data.taxRatePct));
+    if (data.taxName !== undefined) tenant.taxName = data.taxName.trim();
+    if (data.serviceChargePct !== undefined) tenant.serviceChargePct = Math.max(0, Number(data.serviceChargePct));
+    if (data.voidPassword !== undefined && data.voidPassword.trim()) tenant.voidPassword = data.voidPassword.trim();
+    if (data.phone !== undefined) tenant.phone = data.phone.trim();
+    if (data.address !== undefined) tenant.address = data.address.trim();
+
+    return tenant;
+  }
+
   // Create new tenant (SaaS multi-tenant onboarding)
   public createTenant(name: string, country: string, currency: string, taxRatePct: number, branchName: string): Tenant {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -660,11 +1403,16 @@ class RestaurantDatabase {
     const newTenant: Tenant = {
       id: tenantId,
       name,
+      legalName: `${name} Ltd.`,
       slug,
       country,
       currency,
+      currencySymbol: currency === 'SAR' ? '﷼' : currency === 'AED' ? 'د.إ' : '$',
       taxRatePct,
       taxName: `${country} VAT ${taxRatePct}%`,
+      serviceChargePct: 0,
+      voidPassword: '1234',
+      stations: [...DEFAULT_STATIONS],
       createdAt: new Date().toISOString(),
     };
     this.tenants.push(newTenant);
@@ -698,6 +1446,20 @@ class RestaurantDatabase {
         status: 'FREE',
       });
     }
+
+    // Seed initial Owner / Manager staff member for this tenant
+    this.staffUsers.push({
+      id: `staff-${tenantId}-owner`,
+      tenantId,
+      branchId,
+      name: 'Restaurant Admin',
+      email: `admin@${slug}.com`,
+      phone: '+966 50 000 0001',
+      role: 'OWNER',
+      pinCode: '1111',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    });
 
     return newTenant;
   }
